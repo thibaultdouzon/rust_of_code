@@ -1,7 +1,6 @@
 use itertools::Itertools;
 use std::{
     collections::{HashMap, HashSet},
-    hash::Hash,
     vec,
 };
 advent_of_code::solution!(5);
