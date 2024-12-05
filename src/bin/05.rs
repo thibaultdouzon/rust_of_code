@@ -18,6 +18,10 @@ fn parse_input(input: &str) -> (HashMap<i32, Vec<i32>>, Vec<Vec<i32>>) {
         }
     }
 
+    for rule in rules.values_mut() {
+        rule.sort();
+    }
+
     let mut books = Vec::new();
     for line in book_str.lines() {
         books.push(line.split(",").map(|s| s.parse().unwrap()).collect());
@@ -29,7 +33,8 @@ fn parse_input(input: &str) -> (HashMap<i32, Vec<i32>>, Vec<Vec<i32>>) {
 fn check_rules_book(book: &Vec<i32>, rules: &HashMap<i32, Vec<i32>>) -> bool {
     for (i, &num1) in book.iter().enumerate() {
         let fit = book.iter().skip(i + 1).all(|&num2| {
-            rules.get(&num1).unwrap().contains(&num2) && !rules.get(&num2).unwrap().contains(&num1)
+            rules.get(&num1).unwrap().binary_search(&num2).is_ok()
+                && rules.get(&num2).unwrap().binary_search(&num1).is_err()
         });
         if !fit {
             return false;
