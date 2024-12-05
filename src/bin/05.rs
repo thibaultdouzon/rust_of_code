@@ -1,8 +1,5 @@
 use itertools::Itertools;
-use std::{
-    collections::{HashMap, HashSet},
-    vec,
-};
+use std::collections::{HashMap, HashSet};
 advent_of_code::solution!(5);
 
 fn parse_input(input: &str) -> (HashMap<i32, HashSet<i32>>, Vec<Vec<i32>>) {
@@ -52,38 +49,39 @@ pub fn part_one(input: &str) -> Option<u32> {
         .ok()
 }
 
-fn correct_order(book: &Vec<i32>, rules: &HashMap<i32, HashSet<i32>>) -> Vec<i32> {
-    if book.len() == 1 {
-        return book.clone();
+fn correct_order<'a>(
+    book: &'a mut Vec<i32>,
+    beg_idx: usize,
+    rules: &HashMap<i32, HashSet<i32>>,
+) -> &'a mut Vec<i32> {
+    if book.len() == beg_idx + 1 {
+        return book;
     }
     // Topological sort
-    let mut first_elem = 0;
-    for (i, &elem1) in book.iter().enumerate() {
+    let mut first_elem_idx = 0usize;
+    for (i, &elem1) in book.iter().enumerate().skip(beg_idx) {
         if book
             .iter()
             .skip(i + 1)
             .all(|&elem2| rules.get(&elem1).unwrap().contains(&elem2))
         {
-            first_elem = elem1;
+            first_elem_idx = i;
             break;
         }
     }
-    let remaining = book
-        .into_iter()
-        .filter(|&elem| *elem != first_elem)
-        .cloned()
-        .collect();
-    let mut solution = vec![first_elem];
-    solution.extend(correct_order(&remaining, rules));
-    solution
+    book.swap(beg_idx, first_elem_idx);
+
+    correct_order(book, beg_idx + 1, rules);
+
+    book
 }
 
 pub fn part_two(input: &str) -> Option<u32> {
-    let (rules, books) = parse_input(input);
+    let (rules, mut books) = parse_input(input);
     books
-        .iter()
-        .filter(|&book| !check_rules_book(book, &rules))
-        .map(|book| correct_order(book, &rules))
+        .iter_mut()
+        .filter(|book| !check_rules_book(book, &rules))
+        .map(|book| correct_order(book, 0usize, &rules))
         .map(|book| book[book.len() / 2])
         .sum::<i32>()
         .try_into()
