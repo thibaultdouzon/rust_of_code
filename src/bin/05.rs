@@ -1,8 +1,8 @@
 use itertools::Itertools;
-use std::collections::{HashMap, HashSet};
+use std::collections::HashMap;
 advent_of_code::solution!(5);
 
-fn parse_input(input: &str) -> (HashMap<i32, HashSet<i32>>, Vec<Vec<i32>>) {
+fn parse_input(input: &str) -> (HashMap<i32, Vec<i32>>, Vec<Vec<i32>>) {
     let mut rules = HashMap::new();
 
     let (rule_str, book_str) = input.split_once("\n\n").unwrap();
@@ -12,7 +12,7 @@ fn parse_input(input: &str) -> (HashMap<i32, HashSet<i32>>, Vec<Vec<i32>>) {
             .map(|s| s.trim().parse::<i32>().unwrap())
             .collect_tuple()
         {
-            rules.entry(i1).or_insert(HashSet::new()).insert(i2); // DefaultDict here
+            rules.entry(i1).or_insert(Vec::new()).push(i2); // DefaultDict here
         } else {
             panic!("Invalid rule: {}", line);
         }
@@ -26,7 +26,7 @@ fn parse_input(input: &str) -> (HashMap<i32, HashSet<i32>>, Vec<Vec<i32>>) {
     (rules, books)
 }
 
-fn check_rules_book(book: &Vec<i32>, rules: &HashMap<i32, HashSet<i32>>) -> bool {
+fn check_rules_book(book: &Vec<i32>, rules: &HashMap<i32, Vec<i32>>) -> bool {
     for (i, &num1) in book.iter().enumerate() {
         let fit = book.iter().skip(i + 1).all(|&num2| {
             rules.get(&num1).unwrap().contains(&num2) && !rules.get(&num2).unwrap().contains(&num1)
@@ -52,7 +52,7 @@ pub fn part_one(input: &str) -> Option<u32> {
 fn correct_order<'a>(
     book: &'a mut Vec<i32>,
     beg_idx: usize,
-    rules: &HashMap<i32, HashSet<i32>>,
+    rules: &HashMap<i32, Vec<i32>>,
 ) -> &'a mut Vec<i32> {
     if book.len() == beg_idx + 1 {
         return book;
