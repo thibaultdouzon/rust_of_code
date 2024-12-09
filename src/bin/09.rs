@@ -121,12 +121,11 @@ pub fn part_two(input: &str) -> Option<u64> {
             .filter(|b_heap| !b_heap.is_empty())
             .min_by_key(|b_heap| b_heap.peek().unwrap().position)
         {
-            let first_empty_block = b_heap.peek().unwrap();
+            let first_empty_block = b_heap.peek().unwrap().clone();
             if first_empty_block.position > file_block.position {
                 final_file_blocks.push(file_block.clone());
             } else {
-                let empty_size = first_empty_block.size;
-                let first_empty_block = empty_blocks[empty_size].pop().unwrap();
+                let first_empty_block = empty_blocks[first_empty_block.size].pop().unwrap();
                 final_file_blocks.push(Block {
                     position: first_empty_block.position,
                     size: file_block.size,
