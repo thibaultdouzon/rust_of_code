@@ -1,4 +1,5 @@
-use itertools::{repeat_n, Itertools};
+use itertools::repeat_n;
+use std::collections::BinaryHeap;
 
 advent_of_code::solution!(9);
 
@@ -18,6 +19,63 @@ fn parse_input(input: &str) -> Vec<Option<u32>> {
         }
     }
     blocks
+}
+
+#[derive(Debug, Clone, Hash, Eq, PartialEq)]
+struct Block {
+    position: usize,
+    size: usize,
+    file_id: Option<u32>,
+}
+
+impl PartialOrd for Block {
+    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
+        self.position
+            .partial_cmp(&other.position)
+            .map(|o| o.reverse())
+    }
+}
+
+impl Ord for Block {
+    fn cmp(&self, other: &Self) -> std::cmp::Ordering {
+        self.partial_cmp(&other).unwrap()
+    }
+}
+
+fn get_blocks(blocks: &Vec<Option<u32>>) -> (Vec<Block>, Vec<BinaryHeap<Block>>) {
+    let mut empty_blocks = Vec::new();
+    let mut file_blocks = Vec::new();
+    for _ in 0..10 {
+        empty_blocks.push(BinaryHeap::new());
+    }
+
+    let mut i = 0;
+    while i < blocks.len() {
+        let mut size = 0;
+
+        let initial_block = blocks[i];
+
+        while i < blocks.len() && initial_block == blocks[i] {
+            size += 1;
+            i += 1;
+        }
+
+        if initial_block.is_none() {
+            empty_blocks[size].push(Block {
+                position: i - size as usize,
+                size,
+                file_id: None,
+            });
+        } else {
+            file_blocks.push(Block {
+                position: i - size as usize,
+                size,
+                file_id: initial_block,
+            });
+        }
+    }
+
+    (file_blocks, empty_blocks)
 }
 
 pub fn part_one(input: &str) -> Option<u64> {
@@ -51,73 +109,48 @@ pub fn part_one(input: &str) -> Option<u64> {
         .into()
 }
 
-fn blocks_to_str(blocks: &[Option<u32>]) -> String {
-    blocks
-        .iter()
-        .map(|b| match b {
-            Some(v) => v.to_string(),
-            None => ".".to_string(),
-        })
-        .join("")
-}
-
 pub fn part_two(input: &str) -> Option<u64> {
-    let mut blocks = parse_input(input);
+    let blocks = parse_input(input);
+    let (file_blocks, mut empty_blocks) = get_blocks(&blocks);
+    let mut final_file_blocks = Vec::new();
 
-    let mut file_id = 0;
-    for b in blocks.iter().rev() {
-        if let Some(v) = b {
-            file_id = *v;
-            break;
-        }
-    }
-
-    loop {
-        if file_id == 0 {
-            break;
-        }
-        let count_file_id = blocks.iter().filter(|b| b == &&Some(file_id)).count();
-        let (file_position, _) = blocks
+    for file_block in file_blocks.iter().rev() {
+        if let Some(b_heap) = empty_blocks
             .iter()
-            .find_position(|b| b == &&Some(file_id))
-            .unwrap();
-
-        let mut p_begin = 0;
-        loop {
-            if p_begin >= file_position {
-                break;
-            }
-            if blocks[p_begin].is_some() {
-                p_begin += 1;
+            .skip(file_block.size)
+            .filter(|b_heap| !b_heap.is_empty())
+            .min_by_key(|b_heap| b_heap.peek().unwrap().position)
+        {
+            let first_empty_block = b_heap.peek().unwrap();
+            if first_empty_block.position > file_block.position {
+                final_file_blocks.push(file_block.clone());
             } else {
-                let mut count_none = 0;
-                while blocks[p_begin + count_none].is_none() {
-                    count_none += 1;
-                }
-                if count_none >= count_file_id {
-                    break;
-                }
-                p_begin += count_none;
-            }
-        }
-        if p_begin < file_position {
-            for i in 0..count_file_id {
-                blocks.swap(p_begin + i, file_position + i);
-            }
-        }
+                let empty_size = first_empty_block.size;
+                let first_empty_block = empty_blocks[empty_size].pop().unwrap();
+                final_file_blocks.push(Block {
+                    position: first_empty_block.position,
+                    size: file_block.size,
+                    file_id: file_block.file_id,
+                });
 
-        file_id -= 1;
+                if file_block.size < first_empty_block.size {
+                    empty_blocks[first_empty_block.size - file_block.size].push(Block {
+                        position: first_empty_block.position + file_block.size,
+                        size: first_empty_block.size - file_block.size,
+                        file_id: None,
+                    });
+                }
+            }
+        } else {
+            final_file_blocks.push(file_block.clone());
+        }
     }
 
-    blocks
+    final_file_blocks
         .iter()
-        .enumerate()
-        .map(|(i, b)| {
-            i as u64
-                * match b {
-                    Some(v) => *v,
-                    None => 0,
-                } as u64
+        .map(|b| {
+            ((b.position..b.position + b.size).sum::<usize>() as u64 * b.file_id.unwrap() as u64)
+                as u64
         })
         .sum::<u64>()
         .into()
