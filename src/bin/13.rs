@@ -1,4 +1,3 @@
-use num::NumCast;
 use num::ToPrimitive;
 use regex::Regex;
 use std::collections::HashMap;

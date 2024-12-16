@@ -90,6 +90,7 @@ fn move_once(user: (usize, usize), grid: &mut Vec<Vec<char>>, direction: char) -
     }
 }
 
+#[allow(dead_code)]
 fn print_grid(grid: &Vec<Vec<char>>) -> () {
     for row in grid.iter() {
         println!("{}", row.iter().collect::<String>());

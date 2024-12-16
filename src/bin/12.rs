@@ -95,6 +95,7 @@ trait Sizeable {
     fn sides(&self) -> usize;
 }
 
+#[allow(dead_code)]
 #[derive(Debug)]
 struct Region {
     name: char,
